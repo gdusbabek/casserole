@@ -60,6 +60,7 @@
 		<copy todir="${dist.dir}/lib">
 			<fileset dir="${basedir}/lib"/>
 		</copy>
+        <copy file="casserole.jnlp" todir="${dist.dir}"/>
         <zip destfile = "${dist.dir}/cassandra-casserole.zip" basedir="${dist.dir}"/>
     </target>
     

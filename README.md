@@ -13,3 +13,7 @@ build everything with `ant dist`
 
 If you build the `dist` target, you can just double-click on cassandra-casserole.jar.
 If you want to do things the hard way, the main class is `org.apache.cassandra.casserole.Main`.
+
+I've also pushed a Webstart version to my website.
+You can run Casserole by clicking on the [jnlp](http://www.dusbabek.org/~garyd/casserole/casserole.jnlp) file.
+Nothing is signed, so you'll get security warnings every time Casserole tries to create a connection to a node.

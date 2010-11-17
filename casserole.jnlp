@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jnlp spec="1.0+" codebase="http://www.dusbabek.org/~garyd/casserole" href="casserole.jnlp">
+    <information>
+        <title>Cassandra Casserole</title>
+        <vendor>:)</vendor>
+    </information>
+    <resources>
+        <!-- Application Resources -->
+        <j2se version="1.6+"
+              href="http://java.sun.com/products/autodl/j2se"/>
+        <jar href="cassandra-casserole.jar" main="true" />
+        <jar href="lib/apache-cassandra-0.7.0-beta3-SNAPSHOT.jar"/>
+        <jar href="lib/commons-lang-2.4.jar"/>
+        <jar href="lib/forms-1.3.0.jar"/>
+        <jar href="lib/forms.jar"/>
+        <jar href="lib/guava-r05.jar"/>
+        <jar href="lib/libthrift-0.5.jar"/>
+        <jar href="lib/log4j-1.2.16.jar"/>
+        <jar href="lib/slf4j-api-1.6.1.jar"/>
+        <jar href="lib/slf4j-log4j12-1.6.1.jar"/>
+        
+    </resources>
+    <application-desc
+         name="Cassandra Casserole"
+         main-class="org.apache.cassandra.casserole.Main"
+         width="800"
+         height="600">
+     </application-desc>
+     <update check="background"/>
+</jnlp>	
