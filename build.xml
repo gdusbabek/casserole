@@ -53,7 +53,7 @@
         <jar jarfile="${dist.dir}/cassandra-casserole-jformdesigner-forms.jar" basedir="${build.src}" includes="**/*.jfd"/>
     </target>
     
-    <target  name="dist" depends="jar">
+    <target name="dist" depends="jar">
         <copy todir="${dist.dir}/license">
             <fileset dir="${basedir}/license"/>
         </copy>
@@ -61,9 +61,15 @@
 			<fileset dir="${basedir}/lib"/>
 		</copy>
         <copy file="casserole.jnlp" todir="${dist.dir}"/>
+    </target>
+    
+    <target name="zip" depends="dist">
         <zip destfile = "${dist.dir}/cassandra-casserole.zip" basedir="${dist.dir}"/>
     </target>
     
+    <target  name="run" depends="dist">
+        <java jar="${dist.dir}/cassandra-casserole.jar" fork="true"/>
+    </target>
     <target name="test" depends="build">
         <mkdir dir="${test.classes}"/>
         <javac debug="true" destdir="${test.classes}">
