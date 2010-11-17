@@ -41,7 +41,10 @@ public class ConnectionPool {
         for (String host : allHosts) {
             Connection con = new Connection();
             con.setHost(host);
-            con.setJmxPort(JmxPortResolver.getPort(host, init.getJmxPort()));
+            if (System.getProperty("futzjmx") != null)
+                con.setJmxPort(JmxPortResolver.getPort(host, init.getJmxPort()));
+            else
+                con.setJmxPort(init.getJmxPort());
             con.setThriftPort(init.getThriftPort());
             try {
                 con.connect();
