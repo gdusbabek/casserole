@@ -1,0 +1,12 @@
+Casserole for Cassandra is distributed under the Apache 2.0 license (apache.txt).
+
+* JGoodies Forms is distribted under its license (jgoodies-license.txt).
+* JUnit is distributed under the Common Public License 1.0 (cpl.txt).
+* slf4j is distributed under the MIT license (mit.txt).
+* The following included libraries are released under the Apache 2.0 license (apache.txt):
+    * apache cassandra
+    * apache commons-lang
+    * google guava
+    * apache thrift
+    * apache log4j
+    
