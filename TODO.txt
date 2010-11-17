@@ -8,3 +8,4 @@
 * panels are still refreshing after they go away.
 * model objects take a while to populate with jmx. need screen entertainment during loading.
 * stream section selection gets lost on each refresh.
+* be more efficient with connections (what if there were 1000 servers?)
