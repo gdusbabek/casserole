@@ -45,7 +45,7 @@
         <jar jarfile="${dist.dir}/cassandra-casserole.jar" basedir="${build.classes}" >
             <manifest>
                 <attribute name="Implementation-Title" value="Cassandra Casserole"/>
-                <attribute name="Main-Class" value="org.apache.cassandra.casserole.Main"/>
+                <attribute name="Main-Class" value="casserole.Main"/>
                 <attribute name="Class-Path" value="${manifest.classpath}"/>
             </manifest>
         </jar>
@@ -87,8 +87,8 @@
                 <pathelement location="${test.classes}"/>
                 <pathelement location="${build.classes}"/>
             </classpath>
-            <test name="org.apache.cassandra.casserole.util.SizeFormatTests"/>
-            <test name="org.apache.cassandra.casserole.util.ParseTests"/>
+            <test name="casserole.util.SizeFormatTests"/>
+            <test name="casserole.util.ParseTests"/>
             <!-- cannot, for the life of me, figure out how to make this work. 
             <batchtest fork="no" todir="${build.test.dir}/output">
                 <fileset dir="${test.unit.src}" includes="**/*.java"/>

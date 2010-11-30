@@ -22,7 +22,7 @@
     </resources>
     <application-desc
          name="Cassandra Casserole"
-         main-class="org.apache.cassandra.casserole.Main"
+         main-class="casserole.Main"
          width="800"
          height="600">
      </application-desc>
