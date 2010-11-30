@@ -10,6 +10,7 @@ import java.rmi.RemoteException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.concurrent.TimeoutException;
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
@@ -27,22 +28,38 @@ public class RingPanel extends JPanel {
     
     private Timer timer;
     private ActionListener updateListener;
+    private ConnectionPool pool;
     
     public RingPanel(final Connection con)
     {
         initComponents();
-        ConnectionPool _pool = null;
         final UpdateTableModel<Token, RingData> tableModel = new UpdateTableModel<Token, RingData>(RingData.COLS);
-        try { _pool = new ConnectionPool(con); } catch (RemoteException ex) { throw new RuntimeException(ex); }
-        final ConnectionPool pool = _pool;
-        
+        try { 
+            pool = new ConnectionPool(con); 
+        } catch (RemoteException ex) { 
+            throw new RuntimeException(ex); 
+        }
+          
         ringTable.setModel(tableModel);
         ringTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         ringTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent e) {
                 if (e.getValueIsAdjusting()) return;
                 RingData node = tableModel.getRow(ringTable.getSelectedRow());
-                Connection con = pool.getConnection(node.getHost());
+                final Connection con = pool.getConnection(node.getHost());
+                if (con.isUnstable()) {
+                    new Thread("Connection healer") {
+                        public void run() {
+                            try {
+                                con.connect();
+                            } catch (RemoteException ex) {
+                                logger.debug("Not healed." + ex.getMessage());
+                            } catch (TimeoutException ex) {
+                                logger.debug("Not healed." + ex.getMessage());
+                            }
+                        }
+                    }.start();
+                }
                 cfStatsPanel.setConnection(con);
                 tpStatsPanel.setConnection(con);
                 cacheStatsPanel.setConnection(con);
@@ -50,6 +67,8 @@ public class RingPanel extends JPanel {
                 msgStatsPanel.setConnection(con);
                 streamPanel.setConnection(con);
                 logger.trace("Node selection changed");
+                if (con.isUnstable())
+                    logger.debug("Unstable connection");
             }
         });
         updateListener = new ActionListener() {
@@ -79,6 +98,9 @@ public class RingPanel extends JPanel {
                             tableModel.update(t, updatedData.get(t));
                         
                         status.setText("Connected");
+                    } catch (TimeoutException ex) {
+                        status.setText(ex.getMessage());
+                        con.disconnect();
                     } catch (RemoteException ex) {
                         status.setText(ex.getMessage());
                         con.disconnect();
@@ -102,6 +124,16 @@ public class RingPanel extends JPanel {
     
     public RingPanel() {
         this(null);
+    }
+    
+    void destroy() {
+        timer.stop();
+        cfStatsPanel.stop();
+        tpStatsPanel.stop();
+        cacheStatsPanel.stop();
+        indexStatsPanel.stop();
+        msgStatsPanel.stop();
+        streamPanel.stop();
     }
 
     private void initComponents() {
@@ -209,6 +241,7 @@ public class RingPanel extends JPanel {
             // disconnect button was clicked.
             Connection con = (Connection)RingPanel.this.getClientProperty(ComponentProperties.CONNECTION);
             con.disconnect();
+            pool.disconnect();
             RingPanel.this.firePropertyChange(ComponentProperties.CONNECTION, true, false);
         }
     }

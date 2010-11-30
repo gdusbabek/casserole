@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.TimeoutException;
 
 public class ConnectionPool {
     private static final Logger logger = LoggerFactory.getLogger(ConnectionPool.class);
@@ -28,8 +29,13 @@ public class ConnectionPool {
     
     public ConnectionPool(Connection init) throws RemoteException
     {
-        if (!init.isConnected())
-            init.connect();
+        if (!init.isConnected()) {
+            try {
+                init.connect();
+            } catch (TimeoutException ex) {
+                throw new RemoteException(ex.getMessage(), ex);
+            }
+        }
         primaryHost = init.getHost();
         connections = new HashMap<String, Connection>();
         Iterable<String> allHosts = Iterables.concat(
@@ -48,6 +54,8 @@ public class ConnectionPool {
             con.setThriftPort(init.getThriftPort());
             try {
                 con.connect();
+            } catch (TimeoutException ex) {
+                logger.warn(String.format("init pool timeout (%s) %s", host, ex.getMessage()));
             } catch (RemoteException ex) {
                 // host might be down.
                 logger.warn("init pool. " + ex.getMessage());
@@ -70,15 +78,23 @@ public class ConnectionPool {
             throw new RuntimeException(ex);
         }
         Connection con = connections.get(addr.getHostAddress());
-        if (!con.isConnected()) {
+        if (!con.isUnstable() && !con.isConnected()) {
             // this is a reconnect.
             try {
                 con.connect();
+            } catch (TimeoutException ex) {
+                logger.debug("Reconnect timed out.");
             } catch (RemoteException ex) {
                 logger.trace("Reconnect failed " + host);
             }
         }
         return con;
+    }
+    
+    public void disconnect() {
+        for (Connection con : connections.values())
+            con.disconnect();
+        connections.clear();
     }
     
     public SortedMap<Token, RingData> getRingData() {
@@ -125,7 +141,11 @@ public class ConnectionPool {
             if (load == null) load = "Unknown";
             String mode = "Unknown";
             try {
-                mode = getConnection(host).getStorageService().getOperationMode();
+                Connection con = getConnection(host);
+                if (con.isUnstable())
+                    mode = "Unstable";
+                else
+                    mode = con.getStorageService().getOperationMode();
             } catch (RemoteException ex) {
                 mode = "Error";
             } catch (UndeclaredThrowableException ex) {

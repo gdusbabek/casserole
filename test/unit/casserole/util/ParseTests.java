@@ -30,7 +30,7 @@ public class ParseTests {
         String columnFamily = "MyTestColumnFamily";
         int generation = 3;
         Descriptor desc = new Descriptor(new File(path), keyspace, columnFamily, generation, false);
-        PendingFile pf = new PendingFile(desc, Component.DATA.name(), sections);
+        PendingFile pf = new PendingFile(null, desc, Component.DATA.name(), sections);
         List<String> pieces = ParseHelp.parsePendingFile(pf.toString());
         assert pieces.size() == 3 + 2 * sections.size();
         assert pieces.get(0).equals(String.format("%s/%s-%s-%d-%s", path, columnFamily, Descriptor.CURRENT_VERSION, generation, Component.DATA.name()));
