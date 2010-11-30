@@ -66,13 +66,15 @@ public class StreamPanel extends RefreshingPanel {
         this.con = con;
         
         try {
-            StreamingServiceMBean ss = con.getStreamingService();
             srcModel.removeAllElements();
-            for (InetAddress src : ss.getStreamSources())
-                srcModel.addElement(src.getHostAddress());
             dstModel.removeAllElements();
-            for (InetAddress dst : ss.getStreamDestinations())
-                dstModel.addElement(dst.getHostAddress());
+            if (!con.isUnstable()) {
+                StreamingServiceMBean ss = con.getStreamingService();
+                for (InetAddress src : ss.getStreamSources())
+                    srcModel.addElement(src.getHostAddress());
+                for (InetAddress dst : ss.getStreamDestinations())
+                    dstModel.addElement(dst.getHostAddress());
+            }
             // clear table model, section model.
             files.clear();
             fileTableModel.fireTableDataChanged();
