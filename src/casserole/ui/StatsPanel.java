@@ -45,6 +45,7 @@ public abstract class StatsPanel extends RefreshingPanel {
                     return;
                 try {
                     curCon = con;
+                    if (curCon.isUnstable()) return;
                     Set<String> existing = model.getKeys();
                     Map<String, RowData> newStats = new HashMap<String, RowData>();
                     try {

@@ -39,17 +39,27 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Connection {
     private static final Logger logger = LoggerFactory.getLogger(Connection.class);
     private static final String STORAGE_SERVICE = "org.apache.cassandra.db:type=StorageService";
+    private static final long TIMEOUT_MILLIS = 5000;
     
+    private Lock connectLock = new ReentrantLock(true);
+    private ReentrantLock connectLock2 = new ReentrantLock(true);
     private String host;
     
     private int jmxPort;
     private JMXConnector jmxc = null;
     private MBeanServerConnection mbsc = null;
     
+    private boolean unstable = false;
     private int thriftPort;
     private Cassandra.Client thriftClient;
     private Disconnect thriftDisconnect;
@@ -64,16 +74,58 @@ public class Connection {
     public Connection() {
     }
     
-    public void connect() throws RemoteException {
-        String conUrl = "service:jmx:rmi:///jndi/rmi://" + host + ":" + jmxPort + "/jmxrmi";
+    public void connect() throws RemoteException, TimeoutException {
+        if (connectLock2.isLocked())
+            throw new RemoteException("Connection in progress");
+        connectLock.lock();
+        final String conUrl = "service:jmx:rmi:///jndi/rmi://" + host + ":" + jmxPort + "/jmxrmi";
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicBoolean disregard = new AtomicBoolean(false);
+        final Exception connectEx = new Exception(); // hack used to track problems in the connection thread.
+        
+        Thread connectThread = new Thread("Connector") {
+            public void run() {
+                connectLock2.lock();
+                try {
+                    JMXServiceURL url = new JMXServiceURL(conUrl);
+                    jmxc = JMXConnectorFactory.connect(url, null);
+                    if (disregard.get()) {
+                        jmxc.close();
+                        jmxc = null;
+                    } else {
+                        mbsc = jmxc.getMBeanServerConnection();
+                        unstable = false;
+                    }
+                    latch.countDown();
+                } catch (MalformedURLException ex) {
+                    connectEx.initCause(ex);
+                } catch (IOException ex) {
+                    connectEx.initCause(ex);
+                } finally {
+                    connectLock2.unlock();
+                }
+            }
+        };
+        connectThread.start();
         try {
-            JMXServiceURL url = new JMXServiceURL(conUrl);
-            jmxc = JMXConnectorFactory.connect(url, null);
-            mbsc = jmxc.getMBeanServerConnection();
-        } catch (MalformedURLException ex) {
-            throw new RemoteException(ex.getMessage(), ex);
-        } catch (IOException ex) {
-            throw new RemoteException("Could not establish connection: " + conUrl);
+            if (!latch.await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
+                disregard.set(true);
+                unstable = true;
+                throw new TimeoutException("Connection timed out");
+            } else {
+                // thread did its job in the time allotted. check for connection problems.
+                if (connectEx.getCause() != null) {
+                    if (connectEx.getCause() instanceof IOException)
+                        throw new RemoteException("Could not establish connection: " + conUrl);
+                    else
+                        throw new RemoteException(connectEx.getCause().getMessage(), connectEx.getCause());
+                } // else, no problems. proceed.
+            }
+        } catch (InterruptedException ex) {
+            throw new RemoteException(ex.getCause().getMessage(), ex.getCause());
+        } finally {
+            if (jmxc == null)
+                connectLock.unlock();
         }
         
         try {
@@ -91,6 +143,8 @@ public class Connection {
             };
         } catch (Exception ex) {
             throw new RemoteException(ex.getMessage(), ex);
+        } finally {
+            connectLock.unlock();
         }
     }
     
@@ -309,6 +363,10 @@ public class Connection {
         } catch (TException ex) {
             throw new RemoteException(ex.getMessage(), ex);
         }
+    }
+    
+    public boolean isUnstable() {
+        return unstable || connectLock2.isLocked();
     }
     
     public boolean isConnected() {
