@@ -51,6 +51,7 @@ public class MainPanel extends JFormPanel
                 public void propertyChange(PropertyChangeEvent evt) {
                     if (!(Boolean)evt.getNewValue()) {
                         rp.removePropertyChangeListener(this);
+                        rp.destroy();
                         refresh();
                     }
                 }

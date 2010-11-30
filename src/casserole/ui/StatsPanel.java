@@ -41,45 +41,48 @@ public abstract class StatsPanel extends RefreshingPanel {
             private Connection curCon = con;
             private Lock lock = new ReentrantLock(true);
             public void run() {
+                long start = System.currentTimeMillis();
                 if (!lock.tryLock() && curCon == con) 
                     return;
                 try {
                     curCon = con;
                     if (curCon.isUnstable()) return;
-                    Set<String> existing = model.getKeys();
-                    Map<String, RowData> newStats = new HashMap<String, RowData>();
-                    try {
-                        for (RowData stat : getUpdatedRowData(curCon))
-                            newStats.put(stat.getName(), stat);
-                        
-                        if (curCon != con)
-                            return;
-                        
-                        Set<String> leaving = new HashSet<String>(existing);
-                        leaving.removeAll(newStats.keySet());
-                        for (String key : leaving)
-                            model.remove(key);
-                        
-                        Set<String> arriving = new HashSet<String>(newStats.keySet());
-                        arriving.removeAll(existing);
-                        for (String key : arriving)
-                            model.insert(key, newStats.get(key));
-                        
-                        Set<String> staying = new HashSet<String>(existing);
-                        staying.removeAll(leaving);
-                        for (String key : staying)
-                            model.update(key, newStats.get(key));
-                    } catch (RemoteException ex) {
-                        logger.info("Selected node likely dead. " + ex.getMessage());
-                    } catch (UndeclaredThrowableException ex) {
-                        logger.debug(ex.getMessage(), ex);
-                        curCon.disconnect();
-                    }
                     
+                    if (isVisible() || model.getRowCount() == 0) {
+                        Set<String> existing = model.getKeys();
+                        Map<String, RowData> newStats = new HashMap<String, RowData>();
+                        try {
+                            for (RowData stat : getUpdatedRowData(curCon))
+                                newStats.put(stat.getName(), stat);
+                            
+                            if (curCon != con)
+                                return;
+                            
+                            Set<String> leaving = new HashSet<String>(existing);
+                            leaving.removeAll(newStats.keySet());
+                            for (String key : leaving)
+                                model.remove(key);
+                            
+                            Set<String> arriving = new HashSet<String>(newStats.keySet());
+                            arriving.removeAll(existing);
+                            for (String key : arriving)
+                                model.insert(key, newStats.get(key));
+                            
+                            Set<String> staying = new HashSet<String>(existing);
+                            staying.removeAll(leaving);
+                            for (String key : staying)
+                                model.update(key, newStats.get(key));
+                        } catch (RemoteException ex) {
+                            logger.info("Selected node likely dead. " + ex.getMessage());
+                        } catch (UndeclaredThrowableException ex) {
+                            logger.debug(ex.getMessage(), ex);
+                            curCon.disconnect();
+                        }
+                    }
                 } finally {
                     lock.unlock();
                 }
-                logger.trace("tp panel stop");
+                logger.trace(StatsPanel.this.getClass().getSimpleName() + " refresh - " + (System.currentTimeMillis() - start) + " " + isVisible());
             }
         };
     }
