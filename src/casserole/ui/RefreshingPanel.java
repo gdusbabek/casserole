@@ -23,6 +23,10 @@ public abstract class RefreshingPanel extends JPanel {
         timer.start();
     }
     
+    public void stop() {
+        timer.stop();
+    }
+    
     protected abstract Runnable getRefresher();
     public abstract void setConnection(Connection con);
 }

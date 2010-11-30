@@ -28,15 +28,18 @@ public class RingPanel extends JPanel {
     
     private Timer timer;
     private ActionListener updateListener;
+    private ConnectionPool pool;
     
     public RingPanel(final Connection con)
     {
         initComponents();
-        ConnectionPool _pool = null;
         final UpdateTableModel<Token, RingData> tableModel = new UpdateTableModel<Token, RingData>(RingData.COLS);
-        try { _pool = new ConnectionPool(con); } catch (RemoteException ex) { throw new RuntimeException(ex); }
-        final ConnectionPool pool = _pool;
-        
+        try { 
+            pool = new ConnectionPool(con); 
+        } catch (RemoteException ex) { 
+            throw new RuntimeException(ex); 
+        }
+          
         ringTable.setModel(tableModel);
         ringTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         ringTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
@@ -121,6 +124,16 @@ public class RingPanel extends JPanel {
     
     public RingPanel() {
         this(null);
+    }
+    
+    void destroy() {
+        timer.stop();
+        cfStatsPanel.stop();
+        tpStatsPanel.stop();
+        cacheStatsPanel.stop();
+        indexStatsPanel.stop();
+        msgStatsPanel.stop();
+        streamPanel.stop();
     }
 
     private void initComponents() {
@@ -228,6 +241,7 @@ public class RingPanel extends JPanel {
             // disconnect button was clicked.
             Connection con = (Connection)RingPanel.this.getClientProperty(ComponentProperties.CONNECTION);
             con.disconnect();
+            pool.disconnect();
             RingPanel.this.firePropertyChange(ComponentProperties.CONNECTION, true, false);
         }
     }

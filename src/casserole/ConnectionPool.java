@@ -91,6 +91,12 @@ public class ConnectionPool {
         return con;
     }
     
+    public void disconnect() {
+        for (Connection con : connections.values())
+            con.disconnect();
+        connections.clear();
+    }
+    
     public SortedMap<Token, RingData> getRingData() {
         StorageServiceMBean bean = null;
         try {
