@@ -30,3 +30,8 @@ It works for me and is probably a good place for you to start if you are interes
    bending casserole.JmxPortResolver to do your bidding, and use the JVM arg "-Dfutzjmx".
 2. I've used JFormDesigner (not free) to create the UI.  The runtime is redistributable though 
    (see license/jgoogies-license.txt).
+
+## Pitch In!
+
+This tool currently sucks. There are plenty of improvements to be made. Please feel free to scratch your own itch or
+tackle something in TODO.txt and then send me a pull request.
